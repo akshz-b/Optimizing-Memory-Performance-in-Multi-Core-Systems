@@ -45,10 +45,10 @@ To support NUMA-aware simulation:
 
 ## 📤 SniperSim Modifications
 
-- Added `std::cout` statements in trace logic to print memory accesses.
-- Each line corresponds to a DRAM request and is stored as a trace file (one per core).
+- Modified to print DRAM memory accesses via `std::cout`
+- Output is written to `dram_trace.txt` after running a benchmark
 
----
+
 
 ## 🏁 How to Run the Complete Flow
 
@@ -56,12 +56,22 @@ To support NUMA-aware simulation:
 
 ```bash
 cd snipersim
-source scripts/env.sh
 make
-./run-sniper -c gainestown -s stop-by-icount:10000000 -d output_folder ./test/matrix_multiply
+./run-sniper -n <num_cores> -g -g perf_model/l3_cache/shared_cores=1 -- <benchmark_binary>
 ```
 
-> Modify Sniper to redirect output into trace files (one per core).
+Then process `dram_trace.txt` as described below.
+
+### 2. Trace Preparation in desired format (2 Steps)
+
+```bash
+python3 sort.py dram_trace.txt sorted_trace.txt
+python3 converttrace.py sorted_trace.txt
+```
+
+Generates one trace file per core (`core_0.txt`, `core_1.txt`, ...) to be used in Ramulator2.
+
+---
 
 ---
 
@@ -76,12 +86,12 @@ make -j
 ```
 
 ### Config Notes:
-- Update `traces:` in `example_config.yaml` with paths to trace files (one per core)
-- Set `Translation.impl` to one of:
+- Set `traces:` to one file per core
+- Set `Translation.impl` to:
   - `Dynamic_migration`
   - `Local_to_requester`
   - `Random_Translation2`
-- Adjust:
+- Parameters for Dynamic Migration:
   - `hot_page_threshold`
   - `window_size`
   - `cooldown_windows`
