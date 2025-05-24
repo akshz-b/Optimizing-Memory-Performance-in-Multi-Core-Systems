@@ -8,85 +8,83 @@
 
 ---
 
-## 🧠 Project Overview
+## 🎯 Problem Statement
 
-This thesis project explores memory optimization strategies for multi-core systems by modifying DRAM access behavior. The work involves:
-- Bypassing cache layers to simulate pure DRAM traffic
-- Implementing custom page placement and migration strategies based on core access patterns
-- Evaluating performance using Ramulator2 and trace input from SniperSim
+In NUMA-based multi-core systems, DRAM access latency varies by core-to-channel distance. Default page placement strategies ignore this and often lead to remote memory accesses. We address this by adding lightweight, runtime translation policies to place data closer to frequently accessing cores, without hardware or OS changes.
 
 ---
 
-## 📁 Repository Structure
+## 🛠️ Implemented Translation Methods
+
+We added two new page placement techniques under:
 
 ```
-.
-├── ramulator2/   # Modified DRAM simulator with custom translation policies
-└── snipersim/    # Modified SniperSim used to generate DRAM access traces
+ramulator2/src/translation/impl/
 ```
+
+- **Local_to_requester.cpp**  
+  → Maps each page to the channel closest to the first accessing core
+
+- **Dynamic_migration.cpp**  
+  → Periodically migrates hot pages to channels with lowest access latency, based on per-core access frequency
 
 ---
 
-## 🔧 Ramulator2 (DRAM Simulator)
+## 🧩 Ramulator2 Modifications
 
-### 🛠️ Key Modifications
-- Custom translation policies:
-  - `FCFSTranslation`: maps page to channel closest to first accessing core
-  - `DynamicTranslation3`: migrates hot pages based on access distribution and latency gain
-- LLC bypass in SimpleO3 frontend
-- Channel-aware latency modeling in DRAM controller
-- Core-to-channel latency matrix added via `utils.cpp`
+To support NUMA-aware simulation:
 
-### 🏗️ Build Instructions
-```bash
-cd ramulator2
-mkdir build
-cd build
-cmake ..
-make -j
-```
-
-### ▶️ Run Example
-```bash
-./ramulator -f ../example_config.yaml
-```
-
-### 🛠️ Config Notes
-- Use one trace file per core
-- Translation policy options:
-  - `Dynamic_migration`
-  - `Local_to_requester`
-  - `Random_Translation2`
-- Tunable parameters: `hot_page_threshold`, `window_size`, `cooldown_windows`
+- `src/frontend/simple_o3.cc` → Bypasses LLC to simulate direct DRAM traffic  
+- `src/controller/generic_dram_controller.cc` → Adds latency penalty based on core-to-channel distance  
+- `src/utils/utils.{h,cpp}` → Maintains core-to-channel latency matrix  
+- `src/translation/impl/` → Includes:
+  - `Local_to_requester.cpp`
+  - `Dynamic_migration.cpp`
 
 ---
 
-## 🧪 SniperSim (Trace Generator)
+## 📤 SniperSim Modifications
 
-### 🛠️ Key Modifications
-- Added `std::cout` statement in trace generation module to print memory accesses
-- Used to generate DRAM-access-only traces by bypassing cache effects
+- Added `std::cout` statements in trace logic to print memory accesses.
+- Each line corresponds to a DRAM request and is stored as a trace file (one per core).
 
-### 🏗️ Build Instructions
+---
+
+## 🏁 How to Run the Complete Flow
+
+### 1. Generate Trace Files using SniperSim
+
 ```bash
 cd snipersim
 source scripts/env.sh
 make
-```
-
-### ▶️ Run Example
-```bash
 ./run-sniper -c gainestown -s stop-by-icount:10000000 -d output_folder ./test/matrix_multiply
 ```
 
-You can redirect trace output to custom files for Ramulator input.
+> Modify Sniper to redirect output into trace files (one per core).
 
 ---
 
-## 📌 Notes
+### 2. Run Ramulator2 with Trace Files
 
-- All experimental results in the thesis were obtained using the setup in this repository.
-- Please cite appropriately if reusing or modifying this simulator setup.
+```bash
+cd ramulator2
+mkdir build && cd build
+cmake ..
+make -j
+./ramulator -f ../example_config.yaml
+```
+
+### Config Notes:
+- Update `traces:` in `example_config.yaml` with paths to trace files (one per core)
+- Set `Translation.impl` to one of:
+  - `Dynamic_migration`
+  - `Local_to_requester`
+  - `Random_Translation2`
+- Adjust:
+  - `hot_page_threshold`
+  - `window_size`
+  - `cooldown_windows`
 
 ---
 
