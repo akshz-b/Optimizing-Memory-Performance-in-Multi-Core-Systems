@@ -1,0 +1,51 @@
+Frontend:
+  impl: SimpleO3
+  clock_ratio: 8
+  num_expected_insts: 1000
+  traces: 
+    - /home/akshz/BenchmarksTraces/matmulnew/core_0.txt
+    - /home/akshz/BenchmarksTraces/matmulnew/core_1.txt
+    - /home/akshz/BenchmarksTraces/matmulnew/core_2.txt
+    - /home/akshz/BenchmarksTraces/matmulnew/core_3.txt
+    - /home/akshz/BenchmarksTraces/matmulnew/core_4.txt
+    - /home/akshz/BenchmarksTraces/matmulnew/core_5.txt
+    - /home/akshz/BenchmarksTraces/matmulnew/core_6.txt
+    - /home/akshz/BenchmarksTraces/matmulnew/core_7.txt
+
+
+  Translation:
+    impl: Dynamic_migration
+  
+    max_addr: 137438953471
+    hot_page_threshold: 10000
+    window_size: 1000000
+    cooldown_windows: 10
+
+              
+
+MemorySystem:
+  impl: GenericDRAM
+  clock_ratio: 1
+
+  DRAM:
+    impl: DDR4
+    org:
+      preset: DDR4_8Gb_x8
+      channel: 8
+      rank: 2
+    timing:
+      preset: DDR4_2400R   
+
+  Controller:
+    impl: Generic
+    Scheduler:
+      impl: FRFCFS
+    RefreshManager:
+      impl: AllBank
+    RowPolicy:
+      impl: OpenRowPolicy
+      cap: 4
+    plugins:
+
+  AddrMapper:
+    impl: ChRaBaRoCo
